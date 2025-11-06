@@ -1,0 +1,266 @@
+/* ===================================
+   ESTILOS DE REPORTES - T&C GROUP
+   =================================== */
+
+/* ===================================
+   LISTA DE REPORTES
+   =================================== */
+
+.reports-list {
+    display: grid;
+    gap: var(--spacing-4);
+}
+
+.report-card {
+    background-color: var(--white);
+    border-radius: var(--border-radius-xl);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-base);
+}
+
+.report-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.report-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-4);
+}
+
+.report-info h3 {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--gray-900);
+    margin-bottom: var(--spacing-2);
+}
+
+.report-meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+    font-size: var(--font-size-sm);
+    color: var(--gray-600);
+}
+
+.report-meta-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
+.report-actions {
+    display: flex;
+    gap: var(--spacing-3);
+    margin-top: var(--spacing-4);
+}
+
+.btn-generate-report {
+    flex: 1;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+    color: var(--white);
+    font-weight: var(--font-weight-semibold);
+    border: none;
+    border-radius: var(--border-radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-generate-report:hover {
+    background: linear-gradient(135deg, var(--primary-700), var(--primary-800));
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-1px);
+}
+
+.btn-generate-report:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-generate-report .spinner {
+    width: 16px;
+    height: 16px;
+    border-width: 2px;
+}
+
+/* ===================================
+   MODAL DE EMAIL
+   =================================== */
+
+.email-modal-body {
+    padding: var(--spacing-6);
+}
+
+.email-instructions {
+    background-color: var(--primary-50);
+    padding: var(--spacing-4);
+    border-radius: var(--border-radius-lg);
+    margin-bottom: var(--spacing-5);
+    border-left: 4px solid var(--primary-600);
+}
+
+.email-instructions p {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--primary-900);
+    line-height: 1.5;
+}
+
+.email-input-group {
+    margin-bottom: var(--spacing-5);
+}
+
+.email-input-group label {
+    display: block;
+    margin-bottom: var(--spacing-2);
+    font-weight: var(--font-weight-semibold);
+    color: var(--gray-900);
+}
+
+.email-input-group textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: var(--spacing-3);
+    font-size: var(--font-size-base);
+    font-family: inherit;
+    border: 2px solid var(--gray-300);
+    border-radius: var(--border-radius-lg);
+    resize: vertical;
+    transition: all var(--transition-base);
+}
+
+.email-input-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.email-input-group .helper-text {
+    margin-top: var(--spacing-2);
+    font-size: var(--font-size-xs);
+    color: var(--gray-600);
+}
+
+.email-preview {
+    background-color: var(--gray-50);
+    padding: var(--spacing-4);
+    border-radius: var(--border-radius-lg);
+    margin-bottom: var(--spacing-5);
+}
+
+.email-preview h4 {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--gray-700);
+    margin-bottom: var(--spacing-2);
+}
+
+.email-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-1) var(--spacing-3);
+    background-color: var(--primary-100);
+    color: var(--primary-700);
+    border-radius: var(--border-radius-full);
+    font-size: var(--font-size-xs);
+    margin-right: var(--spacing-2);
+    margin-bottom: var(--spacing-2);
+}
+
+.modal-actions {
+    display: flex;
+    gap: var(--spacing-3);
+}
+
+.modal-actions button {
+    flex: 1;
+}
+
+/* ===================================
+   ESTADO VACÍO
+   =================================== */
+
+.empty-reports {
+    text-align: center;
+    padding: var(--spacing-12) var(--spacing-6);
+    color: var(--gray-500);
+}
+
+.empty-reports svg {
+    margin-bottom: var(--spacing-6);
+    opacity: 0.5;
+    color: var(--primary-300);
+}
+
+.empty-reports h3 {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
+    color: var(--gray-700);
+    margin-bottom: var(--spacing-2);
+}
+
+.empty-reports p {
+    font-size: var(--font-size-sm);
+}
+
+/* ===================================
+   BADGE DE ESTADO
+   =================================== */
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-1);
+    padding: var(--spacing-1) var(--spacing-3);
+    border-radius: var(--border-radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+}
+
+.status-badge.success {
+    background-color: var(--success-100);
+    color: var(--success-700);
+}
+
+.status-badge.warning {
+    background-color: var(--warning-100);
+    color: var(--warning-700);
+}
+
+.status-badge.info {
+    background-color: var(--primary-100);
+    color: var(--primary-700);
+}
+
+/* ===================================
+   RESPONSIVE
+   =================================== */
+
+@media (max-width: 375px) {
+    .report-card {
+        padding: var(--spacing-5);
+    }
+
+    .report-actions {
+        flex-direction: column;
+    }
+
+    .modal-actions {
+        flex-direction: column;
+    }
+
+    .email-modal-body {
+        padding: var(--spacing-5);
+    }
+}

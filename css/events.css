@@ -1,0 +1,364 @@
+/* ===================================
+   ESTILOS DE EVENTOS - T&C GROUP
+   Formulario de creación y edición
+   =================================== */
+
+/* ===================================
+   FORMULARIO DE EVENTO
+   =================================== */
+
+.event-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-5);
+}
+
+.form-section {
+    background-color: var(--white);
+    border-radius: var(--border-radius-xl);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-sm);
+}
+
+.section-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--gray-900);
+    margin-bottom: var(--spacing-4);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+}
+
+.section-title svg {
+    color: var(--primary-600);
+}
+
+/* ===================================
+   CATEGORÍAS
+   =================================== */
+
+.category-input-group {
+    display: flex;
+    gap: var(--spacing-3);
+    margin-bottom: var(--spacing-4);
+}
+
+.category-input-group input {
+    flex: 1;
+}
+
+.btn-add-category {
+    min-width: 48px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+    color: var(--white);
+    border: none;
+    border-radius: var(--border-radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    flex-shrink: 0;
+}
+
+.btn-add-category:hover {
+    background: linear-gradient(135deg, var(--primary-700), var(--primary-800));
+    transform: scale(1.05);
+}
+
+.btn-add-category:active {
+    transform: scale(0.95);
+}
+
+.categories-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-2);
+    min-height: 48px;
+    padding: var(--spacing-3);
+    background-color: var(--gray-50);
+    border-radius: var(--border-radius-lg);
+    border: 2px dashed var(--gray-300);
+}
+
+.categories-grid:empty::before {
+    content: 'No hay categorías agregadas';
+    color: var(--gray-500);
+    font-size: var(--font-size-sm);
+}
+
+/* ===================================
+   CHIPS DE CATEGORÍA
+   =================================== */
+
+.category-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--border-radius-full);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    transition: all var(--transition-base);
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.chip-text {
+    user-select: none;
+}
+
+.chip-remove {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    color: currentColor;
+}
+
+.chip-remove:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    transform: scale(1.2);
+}
+
+.chip-remove:active {
+    transform: scale(0.9);
+}
+
+/* ===================================
+   BOTONES DEL FORMULARIO
+   =================================== */
+
+.form-actions {
+    display: flex;
+    gap: var(--spacing-3);
+    margin-top: var(--spacing-4);
+}
+
+.btn-cancel {
+    flex: 1;
+    min-height: 48px;
+    padding: var(--spacing-3) var(--spacing-6);
+    background-color: var(--white);
+    color: var(--gray-700);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    border: 2px solid var(--gray-300);
+    border-radius: var(--border-radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.btn-cancel:hover {
+    background-color: var(--gray-100);
+    border-color: var(--gray-400);
+}
+
+.btn-cancel:active {
+    transform: scale(0.98);
+}
+
+.btn-save {
+    flex: 2;
+    min-height: 48px;
+    padding: var(--spacing-3) var(--spacing-6);
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+    color: var(--white);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    border: none;
+    border-radius: var(--border-radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    box-shadow: var(--shadow-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+}
+
+.btn-save:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--primary-700), var(--primary-800));
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-1px);
+}
+
+.btn-save:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.btn-save:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ===================================
+   HELPER TEXT
+   =================================== */
+
+.helper-text {
+    font-size: var(--font-size-xs);
+    color: var(--gray-600);
+    margin-top: var(--spacing-2);
+}
+
+.text-muted {
+    color: var(--gray-500);
+    font-size: var(--font-size-sm);
+    font-style: italic;
+}
+
+/* ===================================
+   ANIMACIONES
+   =================================== */
+
+.form-section {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===================================
+   ESTADOS DE CARGA
+   =================================== */
+
+.btn-save .spinner {
+    width: 16px;
+    height: 16px;
+    border-width: 2px;
+}
+
+/* ===================================
+   CARD DE ACCIÓN RÁPIDA
+   =================================== */
+
+.quick-action-card {
+    background: linear-gradient(135deg, var(--primary-50), var(--primary-100));
+    border-radius: var(--border-radius-xl);
+    padding: var(--spacing-5);
+    margin-bottom: var(--spacing-5);
+    border: 2px solid var(--primary-200);
+}
+
+.quick-action-card h3 {
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--primary-900);
+    margin-bottom: var(--spacing-2);
+}
+
+.quick-action-card p {
+    font-size: var(--font-size-sm);
+    color: var(--primary-700);
+}
+
+/* ===================================
+   ACCIONES DE EVENTOS (Cards)
+   =================================== */
+
+.event-actions {
+    display: flex;
+    gap: var(--spacing-2);
+    margin-top: var(--spacing-3);
+    padding-top: var(--spacing-3);
+    border-top: 1px solid var(--gray-200);
+}
+
+.btn-action {
+    flex: 1;
+    min-height: 40px;
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-2);
+}
+
+.btn-action-edit {
+    background-color: var(--primary-50);
+    color: var(--primary-700);
+    border: 1px solid var(--primary-200);
+}
+
+.btn-action-edit:hover {
+    background-color: var(--primary-100);
+    border-color: var(--primary-300);
+}
+
+.btn-action-delete {
+    background-color: var(--error-50);
+    color: var(--error-700);
+    border: 1px solid var(--error-200);
+}
+
+.btn-action-delete:hover {
+    background-color: var(--error-100);
+    border-color: var(--error-300);
+}
+
+.btn-action svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* ===================================
+   RESPONSIVE
+   =================================== */
+
+@media (max-width: 375px) {
+    .form-section {
+        padding: var(--spacing-5);
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .btn-cancel,
+    .btn-save {
+        flex: 1;
+        width: 100%;
+    }
+
+    .category-input-group {
+        flex-direction: column;
+    }
+
+    .btn-add-category {
+        width: 100%;
+    }
+}

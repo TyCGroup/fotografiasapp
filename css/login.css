@@ -1,0 +1,212 @@
+/* ===================================
+   ESTILOS DE LOGIN - T&C GROUP
+   =================================== */
+
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-6);
+    background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-800) 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Efecto de fondo con círculos */
+.login-container::before,
+.login-container::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.login-container::before {
+    width: 300px;
+    height: 300px;
+    top: -100px;
+    right: -100px;
+}
+
+.login-container::after {
+    width: 400px;
+    height: 400px;
+    bottom: -150px;
+    left: -150px;
+}
+
+/* ===================================
+   LOGO Y BRANDING
+   =================================== */
+
+.logo-section {
+    text-align: center;
+    margin-bottom: var(--spacing-8);
+    z-index: 1;
+}
+
+.logo-circle {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto var(--spacing-4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--white);
+    color: var(--primary-600);
+    border-radius: 50%;
+    box-shadow: var(--shadow-xl);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: var(--shadow-xl);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.2);
+    }
+}
+
+.brand-title {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--white);
+    margin-bottom: var(--spacing-2);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.brand-subtitle {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ===================================
+   FORMULARIO DE LOGIN
+   =================================== */
+
+.login-form {
+    width: 100%;
+    max-width: 400px;
+    padding: var(--spacing-8);
+    background-color: var(--white);
+    border-radius: var(--border-radius-xl);
+    box-shadow: var(--shadow-xl);
+    z-index: 1;
+    animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* ===================================
+   INPUT DE CONTRASEÑA CON TOGGLE
+   =================================== */
+
+.password-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input-wrapper input {
+    padding-right: 48px;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    color: var(--gray-500);
+    border-radius: var(--border-radius-md);
+    padding: 0;
+}
+
+.toggle-password:hover {
+    background-color: var(--gray-100);
+    color: var(--gray-700);
+}
+
+.toggle-password:active {
+    background-color: var(--gray-200);
+}
+
+/* ===================================
+   MODAL DE RECUPERAR CONTRASEÑA
+   =================================== */
+
+.modal-description {
+    margin-bottom: var(--spacing-6);
+    color: var(--gray-600);
+    font-size: var(--font-size-sm);
+    line-height: 1.6;
+}
+
+/* ===================================
+   RESPONSIVE MOBILE
+   =================================== */
+
+@media (max-width: 428px) {
+    .login-container {
+        padding: var(--spacing-4);
+    }
+
+    .login-form {
+        padding: var(--spacing-6);
+    }
+
+    .logo-circle {
+        width: 64px;
+        height: 64px;
+    }
+
+    .brand-title {
+        font-size: var(--font-size-2xl);
+    }
+
+    .brand-subtitle {
+        font-size: var(--font-size-xs);
+    }
+
+    .login-container::before {
+        width: 200px;
+        height: 200px;
+        top: -50px;
+        right: -50px;
+    }
+
+    .login-container::after {
+        width: 250px;
+        height: 250px;
+        bottom: -100px;
+        left: -100px;
+    }
+}
+
+@media (max-width: 375px) {
+    .login-form {
+        padding: var(--spacing-5);
+    }
+
+    .form-group {
+        margin-bottom: var(--spacing-4);
+    }
+}
