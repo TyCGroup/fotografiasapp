@@ -250,20 +250,17 @@ async function createWordDocument(event) {
         }
     }
 
-    // Crear documento
-    const doc = new Document({
+    return new Document({
         sections: sections
     });
-
-    return doc;
 }
 
 /**
  * Crea una sección para una categoría con sus fotos
- * @param {Object} category - Categoría
+ * @param {Object} category - Datos de la categoría
  * @param {Array} photos - Fotos de la categoría
- * @param {Map} imageBuffers - Map de buffers de imágenes
- * @returns {Object} - Sección del documento
+ * @param {Map} imageBuffers - Map de photoId -> ArrayBuffer
+ * @returns {Promise<Object>} - Sección del documento
  */
 async function createCategorySection(category, photos, imageBuffers) {
     const { Paragraph, TextRun, ImageRun, AlignmentType, Header, Footer, Table, TableRow, TableCell, WidthType } = window.docx;
@@ -286,10 +283,11 @@ async function createCategorySection(category, photos, imageBuffers) {
         })
     );
 
-    // Agregar fotos en grid de 2 columnas
-    for (let i = 0; i < photos.length; i += 2) {
+    // Agregar fotos en grid de 3 columnas
+    for (let i = 0; i < photos.length; i += 3) {
         const photo1 = photos[i];
         const photo2 = photos[i + 1];
+        const photo3 = photos[i + 2];
 
         const cells = [];
 
@@ -303,15 +301,15 @@ async function createCategorySection(category, photos, imageBuffers) {
                                 new ImageRun({
                                     data: imageBuffers.get(photo1.id),
                                     transformation: {
-                                        width: 250,
-                                        height: 250
+                                        width: 180,
+                                        height: 180
                                     }
                                 })
                             ],
                             alignment: AlignmentType.CENTER
                         })
                     ],
-                    width: { size: 50, type: WidthType.PERCENTAGE }
+                    width: { size: 33.33, type: WidthType.PERCENTAGE }
                 })
             );
         }
@@ -326,23 +324,54 @@ async function createCategorySection(category, photos, imageBuffers) {
                                 new ImageRun({
                                     data: imageBuffers.get(photo2.id),
                                     transformation: {
-                                        width: 250,
-                                        height: 250
+                                        width: 180,
+                                        height: 180
                                     }
                                 })
                             ],
                             alignment: AlignmentType.CENTER
                         })
                     ],
-                    width: { size: 50, type: WidthType.PERCENTAGE }
+                    width: { size: 33.33, type: WidthType.PERCENTAGE }
                 })
             );
         } else if (photo1) {
-            // Celda vacía si solo hay una foto
+            // Celda vacía si no hay segunda foto
             cells.push(
                 new TableCell({
                     children: [new Paragraph({ text: "" })],
-                    width: { size: 50, type: WidthType.PERCENTAGE }
+                    width: { size: 33.33, type: WidthType.PERCENTAGE }
+                })
+            );
+        }
+
+        // Tercera foto (si existe)
+        if (photo3 && imageBuffers.has(photo3.id)) {
+            cells.push(
+                new TableCell({
+                    children: [
+                        new Paragraph({
+                            children: [
+                                new ImageRun({
+                                    data: imageBuffers.get(photo3.id),
+                                    transformation: {
+                                        width: 180,
+                                        height: 180
+                                    }
+                                })
+                            ],
+                            alignment: AlignmentType.CENTER
+                        })
+                    ],
+                    width: { size: 33.33, type: WidthType.PERCENTAGE }
+                })
+            );
+        } else if (photo1 || photo2) {
+            // Celda vacía si no hay tercera foto
+            cells.push(
+                new TableCell({
+                    children: [new Paragraph({ text: "" })],
+                    width: { size: 33.33, type: WidthType.PERCENTAGE }
                 })
             );
         }
