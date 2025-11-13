@@ -1,6 +1,6 @@
 /* ===================================
    MÓDULO DE STORAGE - T&C GROUP
-   Gestión de Firestore y localStorage
+   Gestión de Firestore, Storage y localStorage
    =================================== */
 
 import { app } from './firestore-config.js';
@@ -18,9 +18,13 @@ import {
     orderBy,
     Timestamp 
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { getStorage } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
 // Inicializar Firestore
 const db = getFirestore(app);
+
+// Inicializar Storage
+const storage = getStorage(app);
 
 /* ===================================
    COLECCIONES
@@ -330,5 +334,6 @@ function deleteEventFromLocalStorage(eventId) {
 
 export {
     db,
+    storage,
     COLLECTIONS
 };
