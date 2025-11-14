@@ -21,8 +21,7 @@ export const CATALOG_CATEGORIES = [
     { nombre: 'Transporte', color: '#14b8a6', icon: '🚐' },
     { nombre: 'Seguridad', color: '#6366f1', icon: '🛡️' },
     { nombre: 'Arreglos Florales', color: '#84cc16', icon: '💐' },
-    { nombre: 'Marketing (Mejores fotos)', color: '#a855f7', icon: '📸' },
-    { nombre: 'Otros', color: '#64748b', icon: '📦' }
+    { nombre: 'Marketing (Mejores fotos)', color: '#a855f7', icon: '📸' }
 ];
 
 /* ===================================
