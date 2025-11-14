@@ -1,188 +1,254 @@
 /* ===================================
    MÓDULO DE ENVÍO DE EMAILS - T&C GROUP
-   Envía reportes por email usando EmailJS
+   Envío de reportes por correo usando Firebase Storage
    =================================== */
 
+import { db, storage } from './storage.js';
+import { collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 import { showMessage } from './utils.js';
-import { getCurrentUser } from './auth.js';
 
 /* ===================================
-   CONFIGURACIÓN DE EMAILJS
+   CONFIGURACIÓN
    =================================== */
 
-const EMAILJS_CONFIG = {
-    serviceId: 'service_v94s42f',
-    templateId: 'template_t1s9d1c',
-    publicKey: 'yNNsGVOHTpW7zEJz8'
-};
-
-/* ===================================
-   INICIALIZACIÓN
-   =================================== */
-
-/**
- * Inicializa EmailJS
- */
-export function initEmailJS() {
-    if (typeof emailjs === 'undefined') {
-        console.error('❌ EmailJS no está cargado');
-        return false;
-    }
-    
-    emailjs.init(EMAILJS_CONFIG.publicKey);
-    console.log('✅ EmailJS inicializado');
-    return true;
-}
+// Nombre de la colección que usa la extensión de Firebase
+const EMAIL_COLLECTION = 'mail';
 
 /* ===================================
    ENVÍO DE EMAILS
    =================================== */
 
 /**
- * Envía un email con el reporte
- * @param {Object} event - Datos del evento
- * @param {Blob} reportBlob - Blob del reporte Word
- * @param {string} downloadUrl - URL de descarga del reporte (opcional, para reportes grandes)
+ * Envía un email con link de descarga del reporte
+ * @param {Array<string>} recipients - Array de emails destinatarios
+ * @param {string} eventName - Nombre del evento
+ * @param {Blob} reportBlob - Blob del documento Word
+ * @param {string} fileName - Nombre del archivo
  * @returns {Promise<boolean>}
  */
-export async function sendReportEmail(event, reportBlob = null, downloadUrl = null) {
+export async function sendReportByEmail(recipients, eventName, reportBlob, fileName) {
     try {
-        // Verificar que EmailJS esté inicializado
-        if (typeof emailjs === 'undefined') {
-            throw new Error('EmailJS no está disponible');
-        }
-
-        // Obtener el usuario actual (quien está generando el reporte)
-        const currentUser = getCurrentUser();
+        console.log('📧 Preparando envío de email...');
         
-        if (!currentUser || !currentUser.email) {
-            throw new Error('No se pudo obtener el email del usuario actual');
+        // Validar destinatarios
+        if (!recipients || recipients.length === 0) {
+            throw new Error('Debes agregar al menos un destinatario');
         }
-
-        console.log('📧 Enviando reporte a:', currentUser.email);
-
-        // Preparar parámetros del email
-        const emailParams = {
-            to_email: currentUser.email,
-            to_name: currentUser.displayName || 'Usuario',
-            event_name: event.nombre,
-            event_responsible: event.responsableNombre,
-            photo_count: event.fotos?.length || 0,
-            category_count: event.categorias?.length || 0
+        
+        // Validar emails
+        const validEmails = recipients.filter(email => isValidEmail(email));
+        if (validEmails.length === 0) {
+            throw new Error('Ningún email es válido');
+        }
+        
+        // Verificar tamaño del archivo
+        const fileSize = reportBlob.size;
+        console.log(`📊 Tamaño del archivo: ${(fileSize / 1024).toFixed(2)} KB`);
+        
+        showMessage('Subiendo reporte a la nube...', 'info', 3000);
+        
+        // Subir archivo a Firebase Storage
+        const downloadURL = await uploadReportToStorage(reportBlob, fileName, eventName);
+        
+        console.log('✅ Archivo subido, generando email...');
+        showMessage('Preparando email...', 'info');
+        
+        // Crear email con link de descarga
+        const emailData = {
+            to: validEmails,
+            message: {
+                subject: `Reporte Fotográfico - ${eventName}`,
+                html: generateEmailHTML(eventName, downloadURL)
+            }
         };
-
-        // Si hay URL de descarga (reportes grandes), usar template con link
-        if (downloadUrl) {
-            emailParams.download_url = downloadUrl;
-            emailParams.is_large_file = 'true';
-            
-            console.log('📤 Enviando email con link de descarga...');
-            showMessage('Enviando email con link de descarga...', 'info', 2000);
-            
-            const response = await emailjs.send(
-                EMAILJS_CONFIG.serviceId,
-                EMAILJS_CONFIG.templateId,
-                emailParams
-            );
-
-            if (response.status === 200) {
-                console.log('✅ Email enviado exitosamente');
-                showMessage('¡Email enviado exitosamente!', 'success');
-                return true;
-            }
-        } 
-        // Si hay Blob y es pequeño, adjuntar el archivo
-        else if (reportBlob) {
-            // Convertir Blob a Base64
-            const base64Report = await blobToBase64(reportBlob);
-            
-            // Calcular tamaño
-            const fileSizeKB = reportBlob.size / 1024;
-            console.log(`📄 Tamaño del reporte: ${fileSizeKB.toFixed(2)} KB`);
-
-            // Si es muy grande (>4MB), no adjuntar
-            if (fileSizeKB > 4096) {
-                console.log('⚠️ Archivo muy grande para adjuntar por email');
-                showMessage('Archivo muy grande. Descarga el reporte manualmente.', 'info');
-                return false;
-            }
-
-            // Agregar archivo al email
-            emailParams.attachment = base64Report;
-            emailParams.attachment_name = `Reporte_${event.nombre.replace(/\s+/g, '_')}.docx`;
-            
-            console.log('📤 Enviando email con archivo adjunto...');
-            showMessage('Enviando email con archivo adjunto...', 'info', 2000);
-
-            const response = await emailjs.send(
-                EMAILJS_CONFIG.serviceId,
-                EMAILJS_CONFIG.templateId,
-                emailParams
-            );
-
-            if (response.status === 200) {
-                console.log('✅ Email enviado exitosamente');
-                showMessage('¡Email enviado exitosamente!', 'success');
-                return true;
-            }
-        }
-
-        return false;
-
+        
+        console.log('📤 Enviando email a:', validEmails);
+        showMessage('Enviando email...', 'info');
+        
+        // Agregar a Firestore - la extensión se encarga del envío
+        await addDoc(collection(db, EMAIL_COLLECTION), emailData);
+        
+        console.log('✅ Email agregado a la cola de envío');
+        
+        return true;
+        
     } catch (error) {
         console.error('❌ Error al enviar email:', error);
-        
-        let errorMessage = 'Error al enviar email';
-        
-        if (error.message.includes('EmailJS')) {
-            errorMessage = 'Error de configuración de EmailJS';
-        } else if (error.message.includes('usuario')) {
-            errorMessage = error.message;
-        } else if (error.text) {
-            errorMessage = `Error: ${error.text}`;
-        }
-        
-        showMessage(errorMessage, 'error');
-        return false;
+        throw error;
     }
 }
 
-/* ===================================
-   UTILIDADES
-   =================================== */
-
 /**
- * Convierte un Blob a Base64
- * @param {Blob} blob - Blob a convertir
- * @returns {Promise<string>}
+ * Sube el reporte a Firebase Storage y devuelve la URL de descarga
+ * @param {Blob} reportBlob - Blob del documento
+ * @param {string} fileName - Nombre del archivo
+ * @param {string} eventName - Nombre del evento
+ * @returns {Promise<string>} - URL de descarga
  */
-function blobToBase64(blob) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            const base64 = reader.result.split(',')[1];
-            resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-    });
+async function uploadReportToStorage(reportBlob, fileName, eventName) {
+    try {
+        // Crear referencia en Storage con timestamp para evitar duplicados
+        const timestamp = Date.now();
+        const sanitizedEventName = eventName.replace(/[^a-zA-Z0-9]/g, '_');
+        const storagePath = `reportes/${sanitizedEventName}_${timestamp}/${fileName}`;
+        
+        const storageRef = ref(storage, storagePath);
+        
+        // Subir el archivo
+        console.log(`📤 Subiendo a: ${storagePath}`);
+        await uploadBytes(storageRef, reportBlob, {
+            contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            customMetadata: {
+                'evento': eventName,
+                'generado': new Date().toISOString()
+            }
+        });
+        
+        // Obtener URL de descarga
+        const downloadURL = await getDownloadURL(storageRef);
+        console.log('✅ URL generada:', downloadURL);
+        
+        return downloadURL;
+        
+    } catch (error) {
+        console.error('❌ Error al subir archivo a Storage:', error);
+        throw new Error('No se pudo subir el archivo a la nube');
+    }
 }
 
 /**
- * Obtiene el tamaño legible de un Blob
- * @param {Blob} blob - Blob
- * @returns {string}
+ * Genera el HTML del email con link de descarga
+ * @param {string} eventName - Nombre del evento
+ * @param {string} downloadURL - URL de descarga
+ * @returns {string} - HTML del email
  */
-export function getBlobSize(blob) {
-    const bytes = blob.size;
+function generateEmailHTML(eventName, downloadURL) {
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }
+                .header {
+                    background: linear-gradient(135deg, #2563eb, #1e40af);
+                    color: white;
+                    padding: 30px;
+                    text-align: center;
+                    border-radius: 10px 10px 0 0;
+                }
+                .header h1 {
+                    margin: 0;
+                    font-size: 24px;
+                }
+                .content {
+                    background: #f9fafb;
+                    padding: 30px;
+                    border-radius: 0 0 10px 10px;
+                }
+                .download-section {
+                    text-align: center;
+                    margin: 30px 0;
+                }
+                .download-button {
+                    display: inline-block;
+                    background: linear-gradient(135deg, #2563eb, #1e40af);
+                    color: white;
+                    padding: 15px 40px;
+                    text-decoration: none;
+                    border-radius: 8px;
+                    font-weight: bold;
+                    font-size: 16px;
+                    transition: transform 0.2s;
+                }
+                .download-button:hover {
+                    transform: scale(1.05);
+                }
+                .note {
+                    color: #6b7280;
+                    font-size: 14px;
+                    text-align: center;
+                    margin-top: 15px;
+                }
+                .footer {
+                    text-align: center;
+                    margin-top: 30px;
+                    padding-top: 20px;
+                    border-top: 1px solid #e5e7eb;
+                    color: #6b7280;
+                    font-size: 14px;
+                }
+                .brand {
+                    font-weight: bold;
+                    color: #2563eb;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>T&C GROUP</h1>
+                <p>Reporte Fotográfico</p>
+            </div>
+            <div class="content">
+                <h2>Hola,</h2>
+                <p>Te compartimos el reporte fotográfico del evento:</p>
+                <h3 style="color: #2563eb;">${eventName}</h3>
+                <p>Haz clic en el botón de abajo para descargar el reporte completo con todas las fotografías organizadas por categorías.</p>
+                
+                <div class="download-section">
+                    <a href="${downloadURL}" class="download-button">
+                        📥 Descargar Reporte
+                    </a>
+                    <p class="note">El link estará disponible por 7 días</p>
+                </div>
+                
+                <p>Si tienes alguna pregunta, no dudes en contactarnos.</p>
+                <p>Saludos cordiales,<br><span class="brand">T&C Group</span></p>
+            </div>
+            <div class="footer">
+                <p>
+                    Ángel Urraza #625 Col. Del Valle, Benito Juárez, CDMX.<br>
+                    +52 55 9146 7500 | tycgroup.com
+                </p>
+            </div>
+        </body>
+        </html>
+    `;
+}
+
+/**
+ * Valida un email
+ * @param {string} email - Email a validar
+ * @returns {boolean}
+ */
+function isValidEmail(email) {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+}
+
+/**
+ * Separa múltiples emails (por coma, punto y coma, o espacio)
+ * @param {string} emailsString - String con múltiples emails
+ * @returns {Array<string>}
+ */
+export function parseMultipleEmails(emailsString) {
+    if (!emailsString) return [];
     
-    if (bytes === 0) return '0 Bytes';
+    // Separar por coma, punto y coma, o espacio
+    const emails = emailsString
+        .split(/[,;\s]+/)
+        .map(email => email.trim())
+        .filter(email => email.length > 0);
     
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    return emails;
 }
 
 /* ===================================
@@ -190,7 +256,6 @@ export function getBlobSize(blob) {
    =================================== */
 
 export default {
-    initEmailJS,
-    sendReportEmail,
-    getBlobSize
+    sendReportByEmail,
+    parseMultipleEmails
 };
