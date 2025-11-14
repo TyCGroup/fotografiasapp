@@ -205,37 +205,52 @@ window.generateReport = async function(eventId, eventName) {
             throw new Error('Evento no encontrado');
         }
         
-        // Obtener email del responsable
-        const { getActiveUsers } = await import('./storage.js');
-        const usuarios = await getActiveUsers();
-        const responsable = usuarios.find(u => u.id === eventData.responsableId);
-        
-        if (!responsable) {
-            throw new Error('No se encontró el responsable del evento.');
+        if (!eventData.fotos || eventData.fotos.length === 0) {
+            throw new Error('Este evento no tiene fotos');
         }
         
-        if (!responsable.email) {
-            throw new Error(`⚠️ El usuario "${responsable.nombre}" no tiene un email configurado en Firestore.\n\nPor favor, ve a Firestore y agrega un campo "email" al documento del usuario con ID: ${responsable.id}`);
-        }
+        console.log('📊 Datos del evento:', {
+            nombre: eventData.nombre,
+            responsable: eventData.responsableNombre,
+            fotos: eventData.fotos.length,
+            categorias: eventData.categorias?.length || 0
+        });
         
-        showMessage(`Generando reporte para enviar a: ${responsable.email}...`, 'info');
+        showMessage('Generando documento Word...', 'info');
         
-        // Generar el reporte
+        // Generar el reporte Word
         const reportBlob = await generateWordReport(eventId);
+        
+        if (!reportBlob) {
+            throw new Error('No se pudo generar el documento Word');
+        }
+        
+        console.log('✅ Documento generado:', {
+            size: reportBlob.size,
+            type: reportBlob.type
+        });
         
         showMessage('Enviando reporte por email...', 'info');
         
-        // Enviar directamente al email del responsable
+        // Preparar nombre del archivo
         const fileName = `Reporte_${eventName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.docx`;
         
+        // Preparar datos para el email
+        const photoCount = eventData.fotos?.length || 0;
+        const categoryCount = eventData.categorias?.length || 0;
+        const responsableNombre = eventData.responsableNombre || 'Responsable';
+        
+        // Enviar por email con los parámetros correctos
         await sendReportByEmail(
-            [responsable.email],
-            eventName,
-            reportBlob,
-            fileName
+            eventData.nombre,        // eventName
+            responsableNombre,       // responsableNombre
+            photoCount,              // photoCount
+            categoryCount,           // categoryCount
+            reportBlob,              // reportBlob
+            fileName                 // fileName
         );
         
-        showMessage(`✅ Reporte enviado correctamente a ${responsable.email}`, 'success', 5000);
+        console.log('✅ Reporte enviado exitosamente');
         
     } catch (error) {
         console.error('❌ Error al generar/enviar reporte:', error);

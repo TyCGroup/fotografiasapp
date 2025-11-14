@@ -7,6 +7,7 @@ import { db, storage } from './storage.js';
 import { collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 import { showMessage } from './utils.js';
+import { getCurrentUser } from './auth.js';
 
 /* ===================================
    CONFIGURACIÓN
@@ -20,31 +21,38 @@ const EMAIL_COLLECTION = 'mail';
    =================================== */
 
 /**
- * Envía un email con link de descarga del reporte
- * @param {Array<string>} recipients - Array de emails destinatarios
+ * Envía un email con link de descarga del reporte al usuario actual
  * @param {string} eventName - Nombre del evento
+ * @param {string} responsableNombre - Nombre del responsable del evento
+ * @param {number} photoCount - Cantidad de fotos
+ * @param {number} categoryCount - Cantidad de categorías
  * @param {Blob} reportBlob - Blob del documento Word
  * @param {string} fileName - Nombre del archivo
  * @returns {Promise<boolean>}
  */
-export async function sendReportByEmail(recipients, eventName, reportBlob, fileName) {
+export async function sendReportByEmail(eventName, responsableNombre, photoCount, categoryCount, reportBlob, fileName) {
     try {
         console.log('📧 Preparando envío de email...');
         
-        // Validar destinatarios
-        if (!recipients || recipients.length === 0) {
-            throw new Error('Debes agregar al menos un destinatario');
+        // Obtener el usuario actual (quien está generando el reporte)
+        const currentUser = getCurrentUser();
+        
+        if (!currentUser || !currentUser.email) {
+            throw new Error('No se pudo obtener el email del usuario actual. Por favor, inicia sesión nuevamente.');
         }
         
-        // Validar emails
-        const validEmails = recipients.filter(email => isValidEmail(email));
-        if (validEmails.length === 0) {
-            throw new Error('Ningún email es válido');
+        console.log('👤 Usuario actual:', currentUser.email);
+        console.log('📨 El reporte se enviará a:', currentUser.email);
+        
+        // Validar email
+        if (!isValidEmail(currentUser.email)) {
+            throw new Error('El email del usuario no es válido');
         }
         
         // Verificar tamaño del archivo
         const fileSize = reportBlob.size;
-        console.log(`📊 Tamaño del archivo: ${(fileSize / 1024).toFixed(2)} KB`);
+        const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+        console.log(`📊 Tamaño del archivo: ${fileSizeMB} MB`);
         
         showMessage('Subiendo reporte a la nube...', 'info', 3000);
         
@@ -54,27 +62,36 @@ export async function sendReportByEmail(recipients, eventName, reportBlob, fileN
         console.log('✅ Archivo subido, generando email...');
         showMessage('Preparando email...', 'info');
         
-        // Crear email con link de descarga
+        // Crear email con link de descarga para el usuario actual
         const emailData = {
-            to: validEmails,
+            to: [currentUser.email], // Array con el email del usuario actual
             message: {
                 subject: `Reporte Fotográfico - ${eventName}`,
-                html: generateEmailHTML(eventName, downloadURL)
+                html: generateEmailHTML(
+                    currentUser.displayName || 'Usuario',
+                    eventName,
+                    responsableNombre,
+                    photoCount,
+                    categoryCount,
+                    downloadURL
+                )
             }
         };
         
-        console.log('📤 Enviando email a:', validEmails);
+        console.log('📤 Enviando email a:', currentUser.email);
         showMessage('Enviando email...', 'info');
         
         // Agregar a Firestore - la extensión se encarga del envío
         await addDoc(collection(db, EMAIL_COLLECTION), emailData);
         
         console.log('✅ Email agregado a la cola de envío');
+        showMessage(`Email enviado exitosamente a ${currentUser.email}`, 'success');
         
         return true;
         
     } catch (error) {
         console.error('❌ Error al enviar email:', error);
+        showMessage(error.message || 'Error al enviar email', 'error');
         throw error;
     }
 }
@@ -119,11 +136,15 @@ async function uploadReportToStorage(reportBlob, fileName, eventName) {
 
 /**
  * Genera el HTML del email con link de descarga
+ * @param {string} userName - Nombre del usuario destinatario
  * @param {string} eventName - Nombre del evento
+ * @param {string} responsableNombre - Nombre del responsable
+ * @param {number} photoCount - Cantidad de fotos
+ * @param {number} categoryCount - Cantidad de categorías
  * @param {string} downloadURL - URL de descarga
  * @returns {string} - HTML del email
  */
-function generateEmailHTML(eventName, downloadURL) {
+function generateEmailHTML(userName, eventName, responsableNombre, photoCount, categoryCount, downloadURL) {
     return `
         <!DOCTYPE html>
         <html>
@@ -137,26 +158,68 @@ function generateEmailHTML(eventName, downloadURL) {
                     max-width: 600px;
                     margin: 0 auto;
                     padding: 20px;
+                    background-color: #f3f4f6;
+                }
+                .container {
+                    background: white;
+                    border-radius: 10px;
+                    overflow: hidden;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
                 }
                 .header {
                     background: linear-gradient(135deg, #2563eb, #1e40af);
                     color: white;
                     padding: 30px;
                     text-align: center;
-                    border-radius: 10px 10px 0 0;
                 }
                 .header h1 {
                     margin: 0;
                     font-size: 24px;
                 }
+                .header p {
+                    margin: 10px 0 0 0;
+                    opacity: 0.9;
+                }
                 .content {
-                    background: #f9fafb;
                     padding: 30px;
-                    border-radius: 0 0 10px 10px;
+                }
+                .greeting {
+                    font-size: 18px;
+                    margin-bottom: 20px;
+                }
+                .event-info {
+                    background: #f9fafb;
+                    border-left: 4px solid #2563eb;
+                    padding: 20px;
+                    margin: 20px 0;
+                    border-radius: 4px;
+                }
+                .event-info h3 {
+                    margin: 0 0 15px 0;
+                    color: #2563eb;
+                }
+                .info-row {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 8px 0;
+                    border-bottom: 1px solid #e5e7eb;
+                }
+                .info-row:last-child {
+                    border-bottom: none;
+                }
+                .info-label {
+                    font-weight: bold;
+                    color: #4b5563;
+                }
+                .info-value {
+                    color: #1f2937;
                 }
                 .download-section {
                     text-align: center;
                     margin: 30px 0;
+                    padding: 20px;
+                    background: #eff6ff;
+                    border-radius: 8px;
                 }
                 .download-button {
                     display: inline-block;
@@ -167,21 +230,24 @@ function generateEmailHTML(eventName, downloadURL) {
                     border-radius: 8px;
                     font-weight: bold;
                     font-size: 16px;
-                    transition: transform 0.2s;
+                    transition: all 0.3s;
+                    box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
                 }
                 .download-button:hover {
-                    transform: scale(1.05);
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 12px rgba(37, 99, 235, 0.4);
                 }
                 .note {
                     color: #6b7280;
                     font-size: 14px;
                     text-align: center;
                     margin-top: 15px;
+                    font-style: italic;
                 }
                 .footer {
+                    background: #f9fafb;
                     text-align: center;
-                    margin-top: 30px;
-                    padding-top: 20px;
+                    padding: 20px;
                     border-top: 1px solid #e5e7eb;
                     color: #6b7280;
                     font-size: 14px;
@@ -190,34 +256,84 @@ function generateEmailHTML(eventName, downloadURL) {
                     font-weight: bold;
                     color: #2563eb;
                 }
+                .alert {
+                    background: #fef3c7;
+                    border-left: 4px solid #f59e0b;
+                    padding: 15px;
+                    margin: 20px 0;
+                    border-radius: 4px;
+                    font-size: 14px;
+                }
             </style>
         </head>
         <body>
-            <div class="header">
-                <h1>T&C GROUP</h1>
-                <p>Reporte Fotográfico</p>
-            </div>
-            <div class="content">
-                <h2>Hola,</h2>
-                <p>Te compartimos el reporte fotográfico del evento:</p>
-                <h3 style="color: #2563eb;">${eventName}</h3>
-                <p>Haz clic en el botón de abajo para descargar el reporte completo con todas las fotografías organizadas por categorías.</p>
-                
-                <div class="download-section">
-                    <a href="${downloadURL}" class="download-button">
-                        📥 Descargar Reporte
-                    </a>
-                    <p class="note">El link estará disponible por 7 días</p>
+            <div class="container">
+                <div class="header">
+                    <h1>📸 T&C GROUP</h1>
+                    <p>Reporte Fotográfico Generado</p>
                 </div>
                 
-                <p>Si tienes alguna pregunta, no dudes en contactarnos.</p>
-                <p>Saludos cordiales,<br><span class="brand">T&C Group</span></p>
-            </div>
-            <div class="footer">
-                <p>
-                    Ángel Urraza #625 Col. Del Valle, Benito Juárez, CDMX.<br>
-                    +52 55 9146 7500 | tycgroup.com
-                </p>
+                <div class="content">
+                    <div class="greeting">
+                        Hola <strong>${userName}</strong>,
+                    </div>
+                    
+                    <p>Tu reporte fotográfico ha sido generado exitosamente y está listo para descargar.</p>
+                    
+                    <div class="event-info">
+                        <h3>Información del Evento</h3>
+                        <div class="info-row">
+                            <span class="info-label">Evento:</span>
+                            <span class="info-value">${eventName}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Responsable:</span>
+                            <span class="info-value">${responsableNombre}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Total de fotos:</span>
+                            <span class="info-value">${photoCount} fotos</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Categorías:</span>
+                            <span class="info-value">${categoryCount} categorías</span>
+                        </div>
+                    </div>
+                    
+                    <div class="download-section">
+                        <p style="margin-top: 0; color: #1f2937;">
+                            <strong>El reporte completo está disponible para descargar:</strong>
+                        </p>
+                        <a href="${downloadURL}" class="download-button">
+                            📥 Descargar Reporte (Word)
+                        </a>
+                        <p class="note">
+                            ⏰ El enlace estará disponible por 7 días
+                        </p>
+                    </div>
+                    
+                    <div class="alert">
+                        <strong>💡 Nota:</strong> El reporte está en formato Word (.docx) y contiene todas las fotografías organizadas por categorías.
+                    </div>
+                    
+                    <p>Si tienes alguna pregunta o necesitas ayuda, no dudes en contactarnos.</p>
+                    
+                    <p style="margin-top: 30px;">
+                        Saludos cordiales,<br>
+                        <span class="brand">Equipo T&C Group</span>
+                    </p>
+                </div>
+                
+                <div class="footer">
+                    <p>
+                        <strong>T&C Group</strong><br>
+                        Ángel Urraza #625 Col. Del Valle, Benito Juárez, CDMX<br>
+                        📞 +52 55 9146 7500 | 🌐 tycgroup.com
+                    </p>
+                    <p style="font-size: 12px; color: #9ca3af; margin-top: 10px;">
+                        Este es un correo automático del Sistema de Gestión Fotográfica
+                    </p>
+                </div>
             </div>
         </body>
         </html>
