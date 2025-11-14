@@ -12,6 +12,7 @@ import { getAllEvents } from './storage.js';
 import { initEventForm, loadEventForEdit, deleteEventById } from './events.js';
 import { initPhotoManager, openPhotoManager } from './photo-manager.js';
 import { initReportManager, loadReportsView } from './report-manager.js';
+import { initUserManagement } from './user-management.js';
 
 /* ===================================
    INICIALIZACIÓN
@@ -84,6 +85,9 @@ function initializeApp() {
     
     // Inicializar gestor de reportes
     initReportManager();
+    
+    // Inicializar gestión de usuarios
+    initUserManagement();
     
     // Cargar datos del usuario
     loadUserData();

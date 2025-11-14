@@ -1,30 +1,45 @@
 /* ===================================
    MÓDULO DE CATEGORÍAS - T&C GROUP
-   Gestión de categorías de eventos
+   Gestión de categorías con catálogo predefinido
    =================================== */
 
 import { generateId } from './utils.js';
 
 /* ===================================
-   COLORES PREDEFINIDOS PARA CATEGORÍAS
+   CATÁLOGO PREDEFINIDO DE CATEGORÍAS
    =================================== */
 
-const CATEGORY_COLORS = [
-    '#3b82f6', // Azul
-    '#10b981', // Verde
-    '#f59e0b', // Amarillo
-    '#ef4444', // Rojo
-    '#8b5cf6', // Púrpura
-    '#ec4899', // Rosa
-    '#06b6d4', // Cian
-    '#f97316', // Naranja
-    '#14b8a6', // Teal
-    '#6366f1', // Índigo
-    '#84cc16', // Lima
-    '#a855f7', // Violeta
+export const CATALOG_CATEGORIES = [
+    { nombre: 'Hospedaje', color: '#3b82f6', icon: '🏨' },
+    { nombre: 'Salones / Recintos', color: '#10b981', icon: '🏛️' },
+    { nombre: 'A&B', color: '#f59e0b', icon: '🍽️' },
+    { nombre: 'A/V', color: '#ef4444', icon: '🎬' },
+    { nombre: 'Producción/Templetes/Alfombra', color: '#8b5cf6', icon: '🎭' },
+    { nombre: 'Mobiliario', color: '#ec4899', icon: '🪑' },
+    { nombre: 'Internet/Tecnología/Cómputo', color: '#06b6d4', icon: '💻' },
+    { nombre: 'Interpretación', color: '#f97316', icon: '🗣️' },
+    { nombre: 'Transporte', color: '#14b8a6', icon: '🚐' },
+    { nombre: 'Seguridad', color: '#6366f1', icon: '🛡️' },
+    { nombre: 'Arreglos Florales', color: '#84cc16', icon: '💐' },
+    { nombre: 'Marketing (Mejores fotos)', color: '#a855f7', icon: '📸' },
+    { nombre: 'Otros', color: '#64748b', icon: '📦' }
 ];
 
-// Índice para rotar colores
+/* ===================================
+   COLORES ADICIONALES (para categorías personalizadas)
+   =================================== */
+
+const ADDITIONAL_COLORS = [
+    '#0ea5e9', // Sky
+    '#22c55e', // Green
+    '#eab308', // Yellow
+    '#f43f5e', // Rose
+    '#a78bfa', // Violet
+    '#fb923c', // Orange
+    '#2dd4bf', // Teal
+    '#818cf8', // Indigo
+];
+
 let colorIndex = 0;
 
 /* ===================================
@@ -34,9 +49,11 @@ let colorIndex = 0;
 /**
  * Crea una nueva categoría
  * @param {string} nombre - Nombre de la categoría
+ * @param {string} color - Color (opcional)
+ * @param {string} icon - Icono (opcional)
  * @returns {Object} - Objeto de categoría
  */
-export function createCategory(nombre) {
+export function createCategory(nombre, color = null, icon = null) {
     if (!nombre || nombre.trim() === '') {
         throw new Error('El nombre de la categoría es requerido');
     }
@@ -44,12 +61,29 @@ export function createCategory(nombre) {
     const category = {
         id: generateId(),
         nombre: nombre.trim(),
-        color: getNextColor(),
+        color: color || getNextColor(),
+        icon: icon || null,
+        isCustom: !color, // Si no tiene color predefinido, es personalizada
         createdAt: new Date().toISOString()
     };
 
     console.log('✅ Categoría creada:', category);
     return category;
+}
+
+/**
+ * Crea una categoría desde el catálogo
+ * @param {string} nombre - Nombre de la categoría del catálogo
+ * @returns {Object} - Objeto de categoría
+ */
+export function createCategoryFromCatalog(nombre) {
+    const catalogItem = CATALOG_CATEGORIES.find(cat => cat.nombre === nombre);
+    
+    if (!catalogItem) {
+        throw new Error('Categoría no encontrada en el catálogo');
+    }
+
+    return createCategory(catalogItem.nombre, catalogItem.color, catalogItem.icon);
 }
 
 /**
@@ -73,14 +107,14 @@ export function validateCategoryName(nombre, existingCategories = []) {
         };
     }
 
-    if (nombre.trim().length > 30) {
+    if (nombre.trim().length > 50) {
         return {
             valid: false,
-            error: 'El nombre no puede exceder 30 caracteres'
+            error: 'El nombre no puede exceder 50 caracteres'
         };
     }
 
-    // Verificar duplicados
+    // Verificar duplicados (case-insensitive)
     const isDuplicate = existingCategories.some(
         cat => cat.nombre.toLowerCase() === nombre.trim().toLowerCase()
     );
@@ -99,16 +133,18 @@ export function validateCategoryName(nombre, existingCategories = []) {
  * Agrega una categoría a un evento
  * @param {Array} categories - Array de categorías existentes
  * @param {string} nombre - Nombre de la nueva categoría
+ * @param {string} color - Color (opcional)
+ * @param {string} icon - Icono (opcional)
  * @returns {Array} - Array actualizado de categorías
  */
-export function addCategoryToEvent(categories, nombre) {
+export function addCategoryToEvent(categories, nombre, color = null, icon = null) {
     const validation = validateCategoryName(nombre, categories);
     
     if (!validation.valid) {
         throw new Error(validation.error);
     }
 
-    const newCategory = createCategory(nombre);
+    const newCategory = createCategory(nombre, color, icon);
     return [...categories, newCategory];
 }
 
@@ -146,12 +182,12 @@ export function updateCategoryName(categories, categoryId, newName) {
 }
 
 /**
- * Obtiene el siguiente color de la paleta
+ * Obtiene el siguiente color de la paleta adicional
  * @returns {string} - Código de color hexadecimal
  */
 function getNextColor() {
-    const color = CATEGORY_COLORS[colorIndex];
-    colorIndex = (colorIndex + 1) % CATEGORY_COLORS.length;
+    const color = ADDITIONAL_COLORS[colorIndex];
+    colorIndex = (colorIndex + 1) % ADDITIONAL_COLORS.length;
     return color;
 }
 
@@ -163,12 +199,16 @@ export function resetColorIndex() {
 }
 
 /**
- * Obtiene un color aleatorio de la paleta
- * @returns {string} - Código de color hexadecimal
+ * Obtiene categorías no usadas del catálogo
+ * @param {Array} usedCategories - Categorías ya agregadas
+ * @returns {Array} - Categorías disponibles del catálogo
  */
-export function getRandomColor() {
-    const randomIndex = Math.floor(Math.random() * CATEGORY_COLORS.length);
-    return CATEGORY_COLORS[randomIndex];
+export function getAvailableCatalogCategories(usedCategories = []) {
+    const usedNames = usedCategories.map(cat => cat.nombre.toLowerCase());
+    
+    return CATALOG_CATEGORIES.filter(
+        catalogCat => !usedNames.includes(catalogCat.nombre.toLowerCase())
+    );
 }
 
 /**
@@ -178,6 +218,9 @@ export function getRandomColor() {
  * @returns {string} - HTML string
  */
 export function renderCategoryChip(category, removable = false) {
+    const icon = category.icon ? `<span class="chip-icon">${category.icon}</span>` : '';
+    const customBadge = category.isCustom ? `<span class="chip-badge">Personalizada</span>` : '';
+    
     const removeBtn = removable 
         ? `<button class="chip-remove" onclick="removeCategory('${category.id}')" type="button">
                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -188,9 +231,28 @@ export function renderCategoryChip(category, removable = false) {
 
     return `
         <div class="category-chip" data-category-id="${category.id}" style="background-color: ${category.color}20; color: ${category.color}; border: 1px solid ${category.color}40;">
+            ${icon}
             <span class="chip-text">${category.nombre}</span>
+            ${customBadge}
             ${removeBtn}
         </div>
+    `;
+}
+
+/**
+ * Renderiza botón de categoría del catálogo
+ * @param {Object} catalogCategory - Categoría del catálogo
+ * @returns {string} - HTML string
+ */
+export function renderCatalogButton(catalogCategory) {
+    return `
+        <button type="button" 
+                class="catalog-category-btn" 
+                onclick="addCatalogCategory('${catalogCategory.nombre}')"
+                style="border-color: ${catalogCategory.color}40; color: ${catalogCategory.color};">
+            <span class="catalog-icon">${catalogCategory.icon}</span>
+            <span class="catalog-name">${catalogCategory.nombre}</span>
+        </button>
     `;
 }
 
@@ -234,14 +296,17 @@ export function getMostUsedCategories(events, limit = 5) {
    =================================== */
 
 export default {
+    CATALOG_CATEGORIES,
     createCategory,
+    createCategoryFromCatalog,
     validateCategoryName,
     addCategoryToEvent,
     removeCategoryFromEvent,
     updateCategoryName,
     resetColorIndex,
-    getRandomColor,
+    getAvailableCatalogCategories,
     renderCategoryChip,
+    renderCatalogButton,
     countPhotosByCategory,
     getMostUsedCategories
 };

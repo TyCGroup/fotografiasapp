@@ -13,12 +13,16 @@ import {
 } from './storage.js';
 
 import {
+    CATALOG_CATEGORIES,
     createCategory,
+    createCategoryFromCatalog,
     addCategoryToEvent,
     removeCategoryFromEvent,
     validateCategoryName,
     resetColorIndex,
-    renderCategoryChip
+    renderCategoryChip,
+    renderCatalogButton,
+    getAvailableCatalogCategories
 } from './categories.js';
 
 import { showMessage } from './utils.js';
@@ -31,7 +35,8 @@ const formState = {
     mode: 'create', // 'create' o 'edit'
     currentEventId: null,
     usuarios: [],
-    categorias: []
+    categorias: [],
+    showCatalog: true // Para alternar entre catálogo y campo personalizado
 };
 
 /* ===================================
@@ -44,6 +49,9 @@ let responsableSelect;
 let categoryInput;
 let addCategoryBtn;
 let categoriesContainer;
+let catalogContainer;
+let toggleCatalogBtn;
+let customCategorySection;
 let saveEventBtn;
 let cancelEventBtn;
 
@@ -64,11 +72,17 @@ export async function initEventForm() {
     categoryInput = document.getElementById('categoryInput');
     addCategoryBtn = document.getElementById('addCategoryBtn');
     categoriesContainer = document.getElementById('categoriesContainer');
+    catalogContainer = document.getElementById('catalogContainer');
+    toggleCatalogBtn = document.getElementById('toggleCatalogBtn');
+    customCategorySection = document.getElementById('customCategorySection');
     saveEventBtn = document.getElementById('saveEventBtn');
     cancelEventBtn = document.getElementById('cancelEventBtn');
 
     // Cargar usuarios
     await loadUsers();
+
+    // Renderizar catálogo inicial
+    renderCatalog();
 
     // Configurar event listeners
     setupFormListeners();
@@ -85,9 +99,9 @@ function setupFormListeners() {
         eventForm.addEventListener('submit', handleFormSubmit);
     }
 
-    // Agregar categoría
+    // Agregar categoría personalizada
     if (addCategoryBtn) {
-        addCategoryBtn.addEventListener('click', handleAddCategory);
+        addCategoryBtn.addEventListener('click', handleAddCustomCategory);
     }
 
     // Enter en input de categoría
@@ -95,9 +109,14 @@ function setupFormListeners() {
         categoryInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                handleAddCategory();
+                handleAddCustomCategory();
             }
         });
+    }
+
+    // Toggle entre catálogo y personalizado
+    if (toggleCatalogBtn) {
+        toggleCatalogBtn.addEventListener('click', handleToggleCatalog);
     }
 
     // Cancelar
@@ -140,13 +159,84 @@ async function loadUsers() {
 }
 
 /* ===================================
-   GESTIÓN DE CATEGORÍAS
+   CATÁLOGO DE CATEGORÍAS
    =================================== */
 
 /**
- * Agrega una nueva categoría
+ * Renderiza el catálogo de categorías
  */
-function handleAddCategory() {
+function renderCatalog() {
+    if (!catalogContainer) return;
+
+    const availableCategories = getAvailableCatalogCategories(formState.categorias);
+
+    if (availableCategories.length === 0) {
+        catalogContainer.innerHTML = '<p class="text-muted">Todas las categorías del catálogo han sido agregadas</p>';
+        return;
+    }
+
+    catalogContainer.innerHTML = availableCategories
+        .map(cat => renderCatalogButton(cat))
+        .join('');
+}
+
+/**
+ * Agrega una categoría desde el catálogo
+ * @param {string} categoryName - Nombre de la categoría del catálogo
+ */
+window.addCatalogCategory = function(categoryName) {
+    try {
+        const newCategory = createCategoryFromCatalog(categoryName);
+        formState.categorias.push(newCategory);
+
+        // Renderizar
+        renderCategories();
+        renderCatalog(); // Actualizar catálogo para ocultar la agregada
+
+        console.log('✅ Categoría del catálogo agregada:', newCategory);
+        showMessage(`Categoría "${categoryName}" agregada`, 'success', 2000);
+    } catch (error) {
+        console.error('❌ Error al agregar categoría del catálogo:', error);
+        showMessage(error.message, 'error');
+    }
+};
+
+/**
+ * Alterna entre catálogo y campo personalizado
+ */
+function handleToggleCatalog() {
+    formState.showCatalog = !formState.showCatalog;
+
+    if (formState.showCatalog) {
+        catalogContainer.classList.remove('hidden');
+        customCategorySection.classList.add('hidden');
+        toggleCatalogBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Agregar Personalizada</span>
+        `;
+    } else {
+        catalogContainer.classList.add('hidden');
+        customCategorySection.classList.remove('hidden');
+        toggleCatalogBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Ver Catálogo</span>
+        `;
+        categoryInput.focus();
+    }
+}
+
+/* ===================================
+   GESTIÓN DE CATEGORÍAS PERSONALIZADAS
+   =================================== */
+
+/**
+ * Agrega una categoría personalizada
+ */
+function handleAddCustomCategory() {
     const nombre = categoryInput.value.trim();
 
     if (!nombre) {
@@ -163,7 +253,7 @@ function handleAddCategory() {
             return;
         }
 
-        // Crear categoría
+        // Crear categoría personalizada (sin color predefinido)
         const newCategory = createCategory(nombre);
         formState.categorias.push(newCategory);
 
@@ -174,7 +264,8 @@ function handleAddCategory() {
         categoryInput.value = '';
         categoryInput.focus();
 
-        console.log('✅ Categoría agregada:', newCategory);
+        console.log('✅ Categoría personalizada agregada:', newCategory);
+        showMessage(`Categoría "${nombre}" agregada`, 'success', 2000);
     } catch (error) {
         console.error('❌ Error al agregar categoría:', error);
         showMessage(error.message, 'error');
@@ -188,6 +279,7 @@ function handleAddCategory() {
 window.removeCategory = function(categoryId) {
     formState.categorias = removeCategoryFromEvent(formState.categorias, categoryId);
     renderCategories();
+    renderCatalog(); // Actualizar catálogo para mostrar la eliminada
     console.log('🗑️ Categoría eliminada:', categoryId);
 };
 
@@ -198,7 +290,7 @@ function renderCategories() {
     if (!categoriesContainer) return;
 
     if (formState.categorias.length === 0) {
-        categoriesContainer.innerHTML = '<p class="text-muted">No hay categorías agregadas</p>';
+        categoriesContainer.innerHTML = '<p class="text-muted">No hay categorías agregadas. Selecciona del catálogo o agrega una personalizada.</p>';
         return;
     }
 
@@ -230,6 +322,11 @@ async function handleFormSubmit(e) {
     if (!responsableId) {
         showMessage('Debes seleccionar un responsable', 'error');
         return;
+    }
+
+    if (formState.categorias.length === 0) {
+        const confirm = window.confirm('No has agregado categorías. ¿Deseas continuar sin categorías?');
+        if (!confirm) return;
     }
 
     // Obtener nombre del responsable
@@ -352,9 +449,10 @@ export async function loadEventForEdit(eventId) {
         responsableSelect.value = event.responsableId;
         formState.categorias = event.categorias || [];
 
-        // Renderizar categorías
+        // Renderizar categorías y catálogo
         resetColorIndex();
         renderCategories();
+        renderCatalog();
 
         // Cambiar título
         const viewTitle = document.querySelector('#createView .view-title');
@@ -388,13 +486,27 @@ function resetForm() {
     formState.mode = 'create';
     formState.currentEventId = null;
     formState.categorias = [];
+    formState.showCatalog = true;
 
     if (eventForm) {
         eventForm.reset();
     }
 
-    if (categoriesContainer) {
-        categoriesContainer.innerHTML = '<p class="text-muted">No hay categorías agregadas</p>';
+    // Resetear categorías
+    renderCategories();
+    renderCatalog();
+
+    // Mostrar catálogo por defecto
+    if (catalogContainer) catalogContainer.classList.remove('hidden');
+    if (customCategorySection) customCategorySection.classList.add('hidden');
+    
+    if (toggleCatalogBtn) {
+        toggleCatalogBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Agregar Personalizada</span>
+        `;
     }
 
     if (saveEventBtn) {
